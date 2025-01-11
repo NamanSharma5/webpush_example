@@ -28,12 +28,13 @@ export default function NotificationsPage() {
         setPermissionState(state);
 
         if (state === 'granted') {
+          console.log('Permission has been granted in initSW.');
           const subscription = await pushManager.getSubscription();
           setSubscriptionInfo(subscription);
         } else if (state === 'prompt') {
-          console.log('Permission is in prompt state.');
+          console.log('Permission is in prompt state in initSW.');
         } else if (state === 'denied') {
-          console.warn('Permission has been denied.');
+          console.warn('Permission has been denied in initSW.');
         }
       } catch (error) {
         console.error('Error initializing Service Worker:', error);
@@ -66,11 +67,8 @@ export default function NotificationsPage() {
         userVisibleOnly: true,
         applicationServerKey: VAPID_PUBLIC_KEY,
       };
-      console.log('Subscription options:', subscriptionOptions);
       const subscription = await pushManager.subscribe(subscriptionOptions);
-      console.log('Subscription:', subscription);
       setSubscriptionInfo(subscription);
-      console.log('Push subscription successful:', subscription);
     } catch (error) {
       console.error('Error subscribing to push notifications:', error);
     }
@@ -113,6 +111,22 @@ export default function NotificationsPage() {
           #subscribe_btn, #test_send_btn { display: none; width: 100%; line-height: 2; font-size: 20px; margin-top: 10px; }
           #active_sub { background-color: #e7e7ff; padding: 20px; word-wrap: break-word; }
           #source_link { position: fixed; bottom: 10px; color: #fff; background-color: rgba(0,0,0,0.5); padding: 5px; left: 10px; }
+          button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 18px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+          }
+          button:hover {
+            background-color: #0056b3;
+          }
         `}</style>
       </Head>
 
@@ -131,7 +145,7 @@ export default function NotificationsPage() {
             <img src="/images/qrcode.png" alt="QR Code" />
           </div>
 
-          {permissionState === 'prompt' && (
+          {(permissionState === null || permissionState === 'prompt') && (
             <button id="subscribe_btn" onClick={subscribeToPush}>
               Subscribe to Notifications
             </button>
@@ -144,14 +158,12 @@ export default function NotificationsPage() {
             </div>
           )}
 
-          <button id="test_send_btn" onClick={testSend}>
-            Send Test Push
-          </button>
+          {permissionState === 'granted' && (
+            <button id="test_send_btn" onClick={testSend}>
+              Send Test Push
+            </button>
+          )}
         </div>
-
-        <a id="source_link" href="https://github.com/andreinwald/webpush-ios-example">
-          Code of this page
-        </a>
       </div>
     </>
   );
