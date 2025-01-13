@@ -101,68 +101,77 @@ export default function NotificationsPage() {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="icon" type="image/png" href="/images/favicon.png" />
         <link rel="apple-touch-icon" href="/images/favicon.png" />
-        <style>{`
-          body { background-color: #cfc7e2; font-family: Arial, sans-serif; font-size: 18px; padding-bottom: 50px; }
-          .wrapper { max-width: 800px; margin: 0 auto; }
-          @supports (-webkit-touch-callout: none) { #scan-qr-code { display: none; } }
-          #add-to-home-screen { display: none; background-color: bisque; padding: 10px; }
-          #add-to-home-screen img { display: block; margin: 0 auto; padding-top: 10px; max-height: 500px; max-width: 100%; }
-          #scan-qr-code img { display: block; max-width: 100%; }
-          #subscribe_btn, #test_send_btn { display: none; width: 100%; line-height: 2; font-size: 20px; margin-top: 10px; }
-          #active_sub { background-color: #e7e7ff; padding: 20px; word-wrap: break-word; }
-          #source_link { position: fixed; bottom: 10px; color: #fff; background-color: rgba(0,0,0,0.5); padding: 5px; left: 10px; }
-          button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 18px;
-            color: #fff;
-            background-color: #007bff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-          }
-          button:hover {
-            background-color: #0056b3;
-          }
-        `}</style>
       </Head>
 
-      <div className="wrapper">
-        <h1>WebPush iOS Example</h1>
-        <div id="content">
-          {showAddToHomeScreen && (
-            <div id="add-to-home-screen">
-              For WebPush to work on iOS, you may need to add this website to the Home Screen (window.navigator is not standalone).
-              <img src="/images/webpush-add-to-home-screen.jpg" alt="Add to home screen" />
-            </div>
-          )}
+      {/* A wrapper div that can set the background color, font, etc.
+          If you prefer, move these classes to your global stylesheet or layout. */}
+      <div className="min-h-screen bg-[#cfc7e2] font-sans text-lg pb-12">
+        <div className="max-w-3xl mx-auto p-4">
+          <h1 className="text-2xl font-bold mb-4">WebPush iOS Example</h1>
+          <div id="content">
+            {showAddToHomeScreen && (
+              <div
+                id="add-to-home-screen"
+                className="bg-orange-100 p-4 mb-4 rounded"
+              >
+                <p>
+                  For WebPush to work on iOS, you may need to add this website to the
+                  Home Screen (window.navigator is not standalone).
+                </p>
+                <img
+                  src="/images/webpush-add-to-home-screen.jpg"
+                  alt="Add to home screen"
+                  className="block mx-auto pt-2 max-h-[500px] max-w-full"
+                />
+              </div>
+            )}
 
-          <div id="scan-qr-code">
-            Open this page on your iPhone/iPad:
-            <img src="/images/qrcode.png" alt="QR Code" />
+            {/* This normally hides itself on iOS Safari due to @supports(-webkit-touch-callout) logic.
+                If you still need that, consider adding a custom CSS or a media query for iOS. */}
+            <div id="scan-qr-code" className="mb-4">
+              <p>Open this page on your iPhone/iPad:</p>
+              <img
+                src="/images/qrcode.png"
+                alt="QR Code"
+                className="block max-w-full h-auto"
+              />
+            </div>
+
+            {/* Conditionally show Subscribe button if permission is 'prompt' or null */}
+            {(permissionState === null || permissionState === 'prompt') && (
+              <button
+                id="subscribe_btn"
+                onClick={subscribeToPush}
+                className="block w-full p-3 mt-4 text-white bg-blue-600 hover:bg-blue-700 rounded text-base"
+              >
+                Subscribe to Notifications
+              </button>
+            )}
+
+            {/* If a subscription exists, display it */}
+            {subscriptionInfo && (
+              <div
+                id="active_sub"
+                className="bg-[#e7e7ff] p-4 my-4 rounded break-words whitespace-pre-wrap"
+              >
+                <b>Active subscription:</b>
+                <pre className="mt-2 text-sm">
+                  {JSON.stringify(subscriptionInfo.toJSON(), null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {/* If permission is granted, show the test send button */}
+            {permissionState === 'granted' && (
+              <button
+                id="test_send_btn"
+                onClick={testSend}
+                className="block w-full p-3 mt-4 text-white bg-green-600 hover:bg-green-700 rounded text-base"
+              >
+                Send Test Push
+              </button>
+            )}
           </div>
-
-          {(permissionState === null || permissionState === 'prompt') && (
-            <button id="subscribe_btn" onClick={subscribeToPush}>
-              Subscribe to Notifications
-            </button>
-          )}
-
-          {subscriptionInfo && (
-            <div id="active_sub">
-              <b>Active subscription:</b>
-              <pre>{JSON.stringify(subscriptionInfo.toJSON(), null, 2)}</pre>
-            </div>
-          )}
-
-          {permissionState === 'granted' && (
-            <button id="test_send_btn" onClick={testSend}>
-              Send Test Push
-            </button>
-          )}
         </div>
       </div>
     </>
