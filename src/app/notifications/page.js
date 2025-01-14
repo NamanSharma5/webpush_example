@@ -96,8 +96,8 @@ export default function NotificationsPage() {
     <>
       <Head>
         <title>WebPush iOS Example</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="icon" type="image/png" href="/images/favicon.png" />
