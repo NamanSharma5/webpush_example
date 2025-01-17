@@ -1,101 +1,183 @@
-import Image from "next/image";
+'use client';
+import React, { useEffect, useState } from 'react';
+import Head from 'next/head';
 
-export default function Home() {
+export default function NotificationsPage() {
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [permissionState, setPermissionState] = useState(null);
+  const [showAddToHomeScreen, setShowAddToHomeScreen] = useState(false);
+
+  const VAPID_PUBLIC_KEY = 'BAwUJxIa7mJZMqu78Tfy2Sb1BWnYiAatFCe1cxpnM-hxNtXjAwaNKz1QKLU8IYYhjUASOFzSvSnMgC00vfsU0IM';
+
+  // Initialize Service Worker and Push Notifications
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) {
+      console.error('Service Worker is not supported in this browser.');
+      return;
+    }
+
+    async function initServiceWorker() {
+      try {
+        const swRegistration = await navigator.serviceWorker.register('/serviceworker.js');
+        console.log('Service Worker registered:', swRegistration);
+
+        const pushManager = swRegistration.pushManager;
+        if (!isPushManagerActive(pushManager)) return;
+
+        const state = await pushManager.permissionState({ userVisibleOnly: true });
+        setPermissionState(state);
+
+        if (state === 'granted') {
+          console.log('Permission has been granted in initSW.');
+          const subscription = await pushManager.getSubscription();
+          setSubscriptionInfo(subscription);
+        } else if (state === 'prompt') {
+          console.log('Permission is in prompt state in initSW.');
+        } else if (state === 'denied') {
+          console.warn('Permission has been denied in initSW.');
+        }
+      } catch (error) {
+        console.error('Error initializing Service Worker:', error);
+      }
+    }
+
+    function isPushManagerActive(pushManager) {
+      if (!pushManager) {
+        if (!window.navigator.standalone) {
+          setShowAddToHomeScreen(true);
+        } else {
+          console.error('PushManager is not active.');
+        }
+        return false;
+      }
+      return true;
+    }
+
+    initServiceWorker();
+  }, []);
+
+  // Subscribe to Push Notifications
+  async function subscribeToPush() {
+    try {
+      const swRegistration = await navigator.serviceWorker.getRegistration();
+      const pushManager = swRegistration.pushManager;
+      if (!pushManager) return;
+
+      const subscriptionOptions = {
+        userVisibleOnly: true,
+        applicationServerKey: VAPID_PUBLIC_KEY,
+      };
+      const subscription = await pushManager.subscribe(subscriptionOptions);
+      setSubscriptionInfo(subscription);
+    } catch (error) {
+      console.error('Error subscribing to push notifications:', error);
+    }
+  }
+
+  // Test sending push notification
+  async function testSend() {
+    const title = 'Push title';
+    const options = {
+      body: 'Additional text with some description',
+      icon: '/images/push_icon.jpg',
+      image:
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Orange_tabby_cat_sitting_on_fallen_leaves-Hisashi-01A.jpg/1920px-Orange_tabby_cat_sitting_on_fallen_leaves-Hisashi-01A.jpg',
+      data: {
+        url: '/?page=success',
+        message_id: 'your_internal_unique_message_id_for_tracking',
+      },
+    };
+    const serviceWorker = await navigator.serviceWorker.ready;
+    await serviceWorker.showNotification(title, options);
+    console.log('Test push notification sent.');
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/images/next/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <>
+      <html>
+        <Head>
+          <title>WebPush iOS Example</title>
+          <link rel="manifest" href="/manifest.json" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <link rel="icon" type="image/png" href="/images/favicon.png" />
+          <link rel="apple-touch-icon" href="/images/favicon.png" />
+        </Head>
+          <body>
+          {/* A wrapper div that can set the background color, font, etc.
+              If you prefer, move these classes to your global stylesheet or layout. */}
+          <div className="min-h-screen bg-[#cfc7e2] font-sans text-lg pb-12">
+            <div className="max-w-3xl mx-auto p-4">
+              <h1 className="text-2xl font-bold mb-4">WebPush iOS Example</h1>
+              <div id="content">
+                {showAddToHomeScreen && (
+                  <div
+                    id="add-to-home-screen"
+                    className="bg-orange-100 p-4 mb-4 rounded"
+                  >
+                    <p>
+                      For WebPush to work on iOS, you may need to add this website to the
+                      Home Screen (window.navigator is not standalone).
+                    </p>
+                    <img
+                      src="/images/webpush-add-to-home-screen.jpg"
+                      alt="Add to home screen"
+                      className="block mx-auto pt-2 max-h-[500px] max-w-full"
+                    />
+                  </div>
+                )}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/images/next/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/images/next/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/images/next/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/images/next/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+                {/* This normally hides itself on iOS Safari due to @supports(-webkit-touch-callout) logic.
+                    If you still need that, consider adding a custom CSS or a media query for iOS. */}
+                <div id="scan-qr-code" className="mb-4">
+                  <p>Open this page on your iPhone/iPad:</p>
+                  <img
+                    src="/images/qrcode.png"
+                    alt="QR Code"
+                    className="block max-w-full h-auto"
+                  />
+                </div>
+
+                {/* Conditionally show Subscribe button if permission is 'prompt' or null */}
+                {(permissionState === null || permissionState === 'prompt') && (
+                  <button
+                    id="subscribe_btn"
+                    onClick={subscribeToPush}
+                    className="block w-full p-3 mt-4 text-white bg-blue-600 hover:bg-blue-700 rounded text-base"
+                  >
+                    Subscribe to Notifications
+                  </button>
+                )}
+
+                {/* If a subscription exists, display it */}
+                {subscriptionInfo && (
+                  <div
+                    id="active_sub"
+                    className="bg-[#e7e7ff] p-4 my-4 rounded break-words whitespace-pre-wrap"
+                  >
+                    <b>Active subscription:</b>
+                    <pre className="mt-2 text-sm">
+                      {JSON.stringify(subscriptionInfo.toJSON(), null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* If permission is granted, show the test send button */}
+                {permissionState === 'granted' && (
+                  <button
+                    id="test_send_btn"
+                    onClick={testSend}
+                    className="block w-full p-3 mt-4 text-white bg-green-600 hover:bg-green-700 rounded text-base"
+                  >
+                    Send Test Push
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    </>
   );
 }
